@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Habit Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    // Runs before the first paint so the saved theme never flashes the wrong colour.
+    // Keep this in sync with DEFAULT_SETTINGS and SETTINGS_KEY in app.js.
+    try {
+      const saved = JSON.parse(window.localStorage.getItem('habitTracker.settings'));
+      document.documentElement.dataset.theme = saved && saved.theme === 'light' ? 'light' : 'dark';
+    } catch (error) {
+      document.documentElement.dataset.theme = 'dark';
+    }
+  </script>
+</head>
+<body>
+  <main class="container">
+    <header class="app-header">
+      <!-- Theme + language -->
+      <div class="toolbar">
+        <div class="toolbar-group" role="group" aria-labelledby="theme-label">
+          <span id="theme-label" class="toolbar-label" data-i18n="themeLabel">Theme</span>
+          <button class="toggle" type="button" data-theme-option="light" aria-pressed="false" data-i18n="themeLight">Light</button>
+          <button class="toggle" type="button" data-theme-option="dark" aria-pressed="true" data-i18n="themeDark">Dark</button>
+        </div>
+
+        <div class="toolbar-group" role="group" aria-labelledby="language-label">
+          <span id="language-label" class="toolbar-label" data-i18n="languageLabel">Language</span>
+          <button class="toggle" type="button" data-language-option="en" aria-pressed="true">EN</button>
+          <button class="toggle" type="button" data-language-option="es" aria-pressed="false">ES</button>
+        </div>
+      </div>
+
+      <h1 class="app-title" data-i18n="documentTitle">Habit Tracker</h1>
+      <p class="app-subtitle" data-i18n="appSubtitle">Log what you completed and keep the streak alive.</p>
+    </header>
+
+    <!-- Streak -->
+    <section class="card streak-card" aria-labelledby="streak-heading">
+      <h2 id="streak-heading" class="card-title" data-i18n="streaks">Streaks</h2>
+
+      <div class="streak-row">
+        <div class="streak-block">
+          <p class="streak-label" data-i18n="currentStreak">Current streak</p>
+          <p class="streak">
+            <span class="streak-emoji" aria-hidden="true">🔥</span>
+            <span id="streak-count" class="streak-count" aria-live="polite">0</span>
+          </p>
+        </div>
+
+        <div class="streak-block">
+          <p class="streak-label" data-i18n="bestStreak">Best streak</p>
+          <p class="streak">
+            <span class="streak-emoji" aria-hidden="true">🏆</span>
+            <span id="best-streak-count" class="streak-count streak-count-best" aria-live="polite">0</span>
+          </p>
+        </div>
+      </div>
+
+      <p id="streak-message" class="streak-message"></p>
+    </section>
+
+    <!-- Weekly time -->
+    <section class="card" aria-labelledby="weekly-heading">
+      <h2 id="weekly-heading" class="card-title" data-i18n="thisWeek">This Week</h2>
+      <p id="weekly-range" class="weekly-range"></p>
+
+      <ul id="weekly-list" class="weekly-list"></ul>
+
+      <p id="weekly-empty" class="empty-state" data-i18n="noTimeThisWeek">No time logged yet this week.</p>
+    </section>
+
+    <!-- Monthly days -->
+    <section class="card" aria-labelledby="month-heading">
+      <h2 id="month-heading" class="card-title" data-i18n="thisMonth">This Month</h2>
+      <p id="month-label" class="month-label"></p>
+
+      <ul id="month-list" class="month-list"></ul>
+
+      <p id="month-empty" class="empty-state" data-i18n="noDaysThisMonth">No days logged yet this month.</p>
+    </section>
+
+    <!-- Form -->
+    <section class="card" aria-labelledby="form-heading">
+      <h2 id="form-heading" class="card-title" data-i18n="logAHabit">Log a Habit</h2>
+
+      <form id="habit-form" class="form">
+        <div class="form-row">
+          <div class="field">
+            <label class="label" for="date-input" data-i18n="date">Date</label>
+            <input class="input" type="date" id="date-input" name="date" required />
+          </div>
+
+          <div class="field">
+            <label class="label" for="habit-input">
+              <span data-i18n="habit">Habit</span>
+              <span class="required" data-i18n="required">(required)</span>
+            </label>
+            <input
+              class="input"
+              type="text"
+              id="habit-input"
+              name="habit"
+              placeholder="Read 20 mins, Workout, Drink 2L water"
+              data-i18n-placeholder="habitPlaceholder"
+              autocomplete="off"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="note-input">
+            <span data-i18n="categoryOrNote">Category / note</span>
+            <span class="optional" data-i18n="optional">(optional)</span>
+          </label>
+          <input
+            class="input"
+            type="text"
+            id="note-input"
+            name="note"
+            placeholder="Health, Chapter 4, No sugar"
+            data-i18n-placeholder="notePlaceholder"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="field">
+          <label class="label" for="minutes-input">
+            <span data-i18n="timeSpent">Time spent</span>
+            <span class="optional" data-i18n="optional">(optional)</span>
+          </label>
+          <input
+            class="input"
+            type="number"
+            id="minutes-input"
+            name="minutes"
+            placeholder="Minutes, e.g. 25"
+            data-i18n-placeholder="minutesPlaceholder"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            autocomplete="off"
+          />
+        </div>
+
+        <button class="button" type="submit" data-i18n="addHabit">Add habit</button>
+      </form>
+    </section>
+
+    <!-- History -->
+    <section class="card" aria-labelledby="history-heading">
+      <div class="history-header">
+        <h2 id="history-heading" class="card-title" data-i18n="completedLogs">Completed Logs</h2>
+        <span id="log-count" class="badge">0 logs</span>
+      </div>
+
+      <ul id="log-list" class="log-list"></ul>
+
+      <p id="empty-state" class="empty-state" data-i18n="noLogsYet">
+        Nothing logged yet. Your completed habits will appear here.
+      </p>
+
+      <p id="storage-warning" class="warning" hidden data-i18n="storageWarning">
+        Storage is not available in this browser, so logs will disappear when you close the page.
+      </p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

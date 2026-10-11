@@ -1,0 +1,746 @@
+/* Habit Tracker — cyberpunk terminal styling (mobile first, no frameworks) */
+
+/* ============================================================
+   TOKENS
+   Every colour, glow and radius in the app comes from here.
+   The dark theme only redefines these properties, so no component
+   rule needs to know which theme is active. Dark comes after :root
+   on purpose: both selectors weigh the same, so the last one wins.
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* Light theme: the same terminal, inverted to daylight. */
+  --void: #e7ecf1;
+  --glass: rgba(255, 255, 255, 0.74);
+  --glass-strong: rgba(255, 255, 255, 0.92);
+  --hairline: rgba(0, 112, 140, 0.28);
+  --hairline-soft: rgba(0, 112, 140, 0.16);
+  --grid: rgba(0, 112, 140, 0.07);
+
+  --ink: #0d1720;
+  --ink-dim: #4a5c6b;
+
+  --accent: #00708c; /* structure: borders, focus, active toggle */
+  --accent-dark: #00566c;
+  --accent-2: #b0006a; /* the record: best streak */
+  --ok: #0f7a35; /* live: submit, today, status dot */
+
+  --glow-accent: 0 0 0 1px rgba(0, 112, 140, 0.18);
+  --glow-accent-2: 0 0 14px rgba(176, 0, 106, 0.16);
+  --glow-ok: 0 0 16px rgba(15, 122, 53, 0.18);
+  --glow-text: none;
+  --emoji-glow: 0 6px 6px rgba(13, 23, 32, 0.18);
+  --focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px var(--accent);
+  --panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+  --frame-shadow: 0 18px 60px rgba(13, 23, 32, 0.12);
+  --scanline: rgba(0, 0, 0, 0.035);
+  --page-glow: rgba(0, 112, 140, 0.06);
+
+  --input-bg: rgba(255, 255, 255, 0.86);
+  --input-border: rgba(0, 112, 140, 0.34);
+  --placeholder: #6b7d8c;
+  --badge-bg: rgba(0, 112, 140, 0.09);
+  --empty-bg: rgba(0, 112, 140, 0.04);
+  --on-accent: #ffffff;
+
+  --warning-bg: rgba(180, 110, 0, 0.1);
+  --warning-border: rgba(180, 110, 0, 0.4);
+  --warning-ink: #7a4a00;
+
+  --radius: 2px;
+  --max-width: 700px;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --void: #05070a;
+  --glass: rgba(17, 24, 34, 0.66);
+  --glass-strong: rgba(23, 32, 44, 0.9);
+  --hairline: rgba(34, 224, 255, 0.2);
+  --hairline-soft: rgba(34, 224, 255, 0.1);
+  --grid: rgba(34, 224, 255, 0.055);
+
+  --ink: #dceaf5;
+  --ink-dim: #8ba3b8;
+
+  --accent: #22e0ff;
+  --accent-dark: #5cebff;
+  --accent-2: #ff3ea5;
+  --ok: #b6ff3a;
+
+  --glow-accent: 0 0 0 1px rgba(34, 224, 255, 0.3), 0 0 18px rgba(34, 224, 255, 0.16);
+  --glow-accent-2: 0 0 18px rgba(255, 62, 165, 0.28);
+  --glow-ok: 0 0 20px rgba(182, 255, 58, 0.22);
+  --glow-text: 0 0 22px rgba(34, 224, 255, 0.4);
+  --emoji-glow: 0 0 12px rgba(255, 150, 70, 0.45);
+  --focus-ring: 0 0 0 2px var(--void), 0 0 0 4px var(--accent);
+  --panel-shadow: none;
+  --frame-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  --scanline: rgba(0, 0, 0, 0.14);
+  --page-glow: rgba(34, 224, 255, 0.07);
+
+  --input-bg: rgba(5, 8, 12, 0.62);
+  --input-border: rgba(34, 224, 255, 0.24);
+  --placeholder: #6f8496;
+  --badge-bg: rgba(34, 224, 255, 0.09);
+  --empty-bg: rgba(34, 224, 255, 0.03);
+  --on-accent: #04121a;
+
+  --warning-bg: rgba(255, 181, 69, 0.1);
+  --warning-border: rgba(255, 181, 69, 0.42);
+  --warning-ink: #ffc16b;
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px 14px 56px;
+  min-height: 100vh;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Screen texture: a faint grid on the ground, a vignette and scanlines on top. */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 44px 44px;
+  background-position: center top;
+}
+
+body::after {
+  z-index: 0;
+  background:
+    radial-gradient(120% 70% at 50% 0%, var(--page-glow), transparent 62%),
+    repeating-linear-gradient(0deg, var(--scanline) 0 1px, transparent 1px 3px);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* One framed column, like a terminal window. */
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  box-shadow: var(--panel-shadow), var(--frame-shadow);
+  overflow: hidden;
+}
+
+/* ============================================================
+   HEADER / TITLE BAR
+   ============================================================ */
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 18px 18px;
+  border-bottom: 1px solid var(--hairline);
+  text-align: center;
+}
+
+.app-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Status dot: the machine is up. */
+.app-title::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 0.7em;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 10px var(--ok);
+  vertical-align: middle;
+}
+
+.app-subtitle {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+}
+
+/* ============================================================
+   TOOLBAR — theme + language
+   ============================================================ */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  width: 100%;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The buttons already read as "LIGHT | DARK" and "EN | ES", so these group
+   names are only for screen readers. Kept in the DOM for i18n and a11y. */
+.toolbar-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.toggle {
+  padding: 7px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.toggle:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.toggle[aria-pressed='true'] {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--glow-accent);
+}
+
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ============================================================
+   PANELS — one section per block, separated by hairlines
+   ============================================================ */
+
+.card {
+  padding: 20px 18px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.card:first-of-type {
+  border-top: 0;
+}
+
+.card-title {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* Short rule under each heading marks the section boundary. */
+.card-title::after {
+  content: '';
+  display: block;
+  width: 30px;
+  height: 1px;
+  margin-top: 9px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.history-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.history-header .card-title {
+  margin-bottom: 0;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  background: var(--badge-bg);
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius);
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   STREAK — the one thing this page is about
+   ============================================================ */
+
+.streak-card {
+  position: relative;
+  background: linear-gradient(180deg, var(--page-glow), transparent 70%);
+}
+
+.streak-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.streak-block {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.streak-block + .streak-block {
+  padding-left: 18px;
+  border-left: 1px solid var(--hairline-soft);
+}
+
+.streak-label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(0.6rem, 2.6vw, 0.72rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap; /* wrapping one label would knock the numerals out of line */
+  color: var(--ink-dim);
+}
+
+/* Centred, not baseline: a 5rem numeral pushes the baseline away from the emoji. */
+.streak {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.streak-emoji {
+  font-size: clamp(1.5rem, 6vw, 2.1rem);
+  line-height: 1;
+  filter: drop-shadow(var(--emoji-glow));
+}
+
+.streak-count {
+  font-family: var(--font-mono);
+  font-size: clamp(3.4rem, 17vw, 5.6rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  text-shadow: var(--glow-text);
+}
+
+/* The record gets the magenta channel. */
+.streak-count-best {
+  color: var(--accent-2);
+}
+
+.streak-message {
+  position: relative;
+  margin: 16px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
+/* Block cursor: the terminal signature, and it carries no text. */
+.streak-message::after {
+  content: '';
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 0.5em;
+  vertical-align: -0.14em;
+  background: var(--ok);
+  animation: blink 1.1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   WEEKLY / MONTHLY SUMMARIES
+   ============================================================ */
+
+.weekly-range,
+.month-label {
+  margin: -6px 0 12px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+
+.weekly-list,
+.month-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.weekly-item,
+.month-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline-soft);
+  transition: background 140ms ease;
+}
+
+.weekly-item:first-child,
+.month-item:first-child {
+  border-top: 0;
+}
+
+.weekly-item:hover,
+.month-item:hover {
+  background: linear-gradient(90deg, var(--badge-bg), transparent 70%);
+}
+
+.weekly-habit,
+.month-habit {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.weekly-time,
+.month-days {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ok);
+}
+
+/* ============================================================
+   FORM
+   ============================================================ */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.required,
+.optional {
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  opacity: 0.72;
+  font-weight: 400;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  color: var(--ink);
+  caret-color: var(--accent);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.input::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+.input:hover {
+  border-color: var(--accent);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--glow-accent), var(--focus-ring);
+}
+
+.button {
+  padding: 13px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--on-accent);
+  background: var(--ok);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: box-shadow 160ms ease, background 160ms ease;
+}
+
+.button:hover {
+  box-shadow: var(--glow-ok);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-ok), var(--focus-ring);
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+/* ============================================================
+   COMPLETED LOGS — terminal entries with a gutter rule
+   ============================================================ */
+
+.log-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.log-item {
+  padding: 11px 0 11px 14px;
+  border-top: 1px solid var(--hairline-soft);
+  border-left: 2px solid transparent;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.log-item:first-child {
+  border-top: 0;
+}
+
+/* The gutter lights up on hover, like a highlighted diff hunk. */
+.log-item:hover {
+  border-left-color: var(--accent);
+  background: linear-gradient(90deg, var(--badge-bg), transparent 72%);
+}
+
+.log-habit {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.log-time {
+  font-weight: 400;
+  font-size: 0.86em;
+  color: var(--ok);
+}
+
+.log-note {
+  margin: 5px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent-2);
+  color: var(--ink-dim);
+  font-size: 0.86rem;
+}
+
+.log-date {
+  margin: 5px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+}
+
+.log-today {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+/* ============================================================
+   EMPTY STATE + WARNING
+   ============================================================ */
+
+.empty-state {
+  margin: 14px 0 0;
+  padding: 18px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--ink-dim);
+  background: var(--empty-bg);
+  border: 1px dashed var(--hairline);
+  border-radius: var(--radius);
+}
+
+.warning {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--warning-ink);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: var(--radius);
+}
+
+/* ============================================================
+   WIDER SCREENS — the header becomes a title bar
+   ============================================================ */
+
+@media (min-width: 620px) {
+  body {
+    padding: 32px 20px 72px;
+  }
+
+  .app-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 20px;
+    padding: 16px 22px;
+    text-align: left;
+  }
+
+  /* Title first on the left, controls pushed to the right edge. */
+  .app-title {
+    order: 1;
+  }
+
+  .toolbar {
+    order: 2;
+    width: auto;
+    flex-wrap: nowrap;
+  }
+
+  .app-subtitle {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .card {
+    padding: 22px;
+  }
+
+  .streak-card {
+    padding: 26px 22px 22px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 14px;
+  }
+
+  .button {
+    align-self: flex-start;
+    min-width: 190px;
+  }
+}
+
+/* ============================================================
+   MOTION — one entrance, and nothing if the user says no
+   ============================================================ */
+
+@media (prefers-reduced-motion: no-preference) {
+  .streak-count {
+    animation: readIn 520ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+
+@keyframes readIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
