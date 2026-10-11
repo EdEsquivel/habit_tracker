@@ -1,0 +1,5 @@
+# Agent tooling, not part of the app.
+# The app itself is three static files, so there is nothing else to ignore:
+# no node_modules, no build output, no lockfile.
+.agents/
+.opencode/
