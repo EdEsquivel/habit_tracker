@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Habit Tracker</title>
   <link rel="stylesheet" href="styles.css" />
+  <!-- No crossorigin here: the fonts are same-directory on file://, and asking for
+       a CORS request makes Chrome reject the preload outright. -->
+  <link rel="preload" href="fonts/inter-latin-var.woff2" as="font" type="font/woff2" />
+  <link rel="preload" href="fonts/lora-latin-var.woff2" as="font" type="font/woff2" />
   <script>
     // Runs before the first paint so the saved theme never flashes the wrong colour.
     // Keep this in sync with DEFAULT_SETTINGS and SETTINGS_KEY in app.js.

@@ -13,8 +13,11 @@ Static web app to log daily habit completions and stay motivated by tracking con
 - Sentences that need a number use `{placeholder}` keys plus `fill()`; singular and plural are separate keys instead of a plural-rules helper.
 - Simple code, descriptive variable/function names, and comments only where they genuinely add value.
 - Clean, responsive mobile-first design; any new view or component must look and feel great on mobile viewports.
+- The visual target is the Figma file "Habit Tracker". Sample its palette and type from the frames rather than inventing values, but this design is **flat**: no shadows, no glows, no glass.
+- Type is **Lora** for display (title, big numerals) and **Inter** for UI. Both are bundled in `fonts/` as latin-subset variable woff2 so the app stays offline; there are no webfont requests.
 - Every colour is a custom property declared in `:root`. The dark theme only redefines those properties under `[data-theme='dark']`, so no component rule knows which theme is active. Never hardcode a colour inside a component rule.
 - Keep contrast at WCAG AA: 4.5:1 for normal text, 3:1 for large text. Both palettes are held to this, and `color-scheme` must be set per theme so native controls (date picker, number spinners) follow along.
+- When a source colour misses AA, darken it to the nearest passing value in the same hue family and note the change in the CSS. Contrast outranks pixel-fidelity to the mockup.
 
 ## Data Storage
 - Stored in `localStorage` under the key `habitTracker.logs`: an array of logs with this shape:
@@ -38,7 +41,8 @@ Static web app to log daily habit completions and stay motivated by tracking con
 - Monthly day counts keep a `Set` of day strings per habit, so the result counts DISTINCT DAYS and never a difference between two dates. Unlike weekly minutes, an entry without `minutes` still counts: days measure how often, not how long.
 
 ## Working Guidelines
-- Implement strictly what is requested: do not add unprompted features, icons, or third-party fonts.
+- Implement strictly what is requested: do not add unprompted features or icons.
+- Bundled font files in `fonts/` are the one sanctioned third-party asset. Anything else must be self-contained: no CDN links, no webfont requests, no external stylesheets.
 - Keep changes small and focused; avoid rewriting existing code that already works.
 - Upon completion, summarize what was changed and highlight any implementation decisions requiring review.
 
@@ -56,7 +60,7 @@ Static web app to log daily habit completions and stay motivated by tracking con
 - 🚫 Never: introduce dependencies, npm packages, UI frameworks, or build tools.
 
 ## Verification
-- No automated test runners or linters. Validate manually by opening `index.html` directly in the browser.
+- There are no automated tests. After each change, verify using the Chrome DevTools MCP: open `index.html`, test the functionality, check the console, and inspect the mobile view.
 - Reset state: DevTools → Application → Local Storage → delete the `habitTracker.logs` and `habitTracker.settings` keys.
 - Streak checks worth repeating after touching date logic: several entries on one day count once; yesterday-only activity keeps the current streak alive; an older longer run still shows as the best streak; entries dated in the future never affect either number.
 - Weekly total checks worth repeating: two entries for the same habit this week are added together; an entry from last week or from the future is excluded; a week with no minutes shows the empty message.

@@ -1,5 +1,13 @@
 # Agent tooling, not part of the app.
-# The app itself is three static files, so there is nothing else to ignore:
-# no node_modules, no build output, no lockfile.
+# The app itself is three static files plus fonts/, so there is nothing
+# else to ignore: no node_modules, no build output, no lockfile.
 .agents/
 .opencode/
+
+# Contains live API credentials in plaintext (Context7, GitHub PAT, Figma).
+# Never commit this; keep it local and rotate the keys if it is ever pushed.
+opencode.json
+
+# The design source of truth lives in Figma's cloud; a local copy adds a 900 KB
+# binary to every clone and diffs are meaningless for it.
+*.fig
