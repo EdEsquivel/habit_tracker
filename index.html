@@ -1,179 +1,507 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Habit Tracker</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- No crossorigin here: the fonts are same-directory on file://, and asking for
-       a CORS request makes Chrome reject the preload outright. -->
-  <link rel="preload" href="fonts/inter-latin-var.woff2" as="font" type="font/woff2" />
-  <link rel="preload" href="fonts/lora-latin-var.woff2" as="font" type="font/woff2" />
-  <script>
-    // Runs before the first paint so the saved theme never flashes the wrong colour.
-    // Keep this in sync with DEFAULT_SETTINGS and SETTINGS_KEY in app.js.
-    try {
-      const saved = JSON.parse(window.localStorage.getItem('habitTracker.settings'));
-      document.documentElement.dataset.theme = saved && saved.theme === 'light' ? 'light' : 'dark';
-    } catch (error) {
-      document.documentElement.dataset.theme = 'dark';
-    }
-  </script>
-</head>
-<body>
-  <main class="container">
-    <header class="app-header">
-      <!-- Theme + language -->
-      <div class="toolbar">
-        <div class="toolbar-group" role="group" aria-labelledby="theme-label">
-          <span id="theme-label" class="toolbar-label" data-i18n="themeLabel">Theme</span>
-          <button class="toggle" type="button" data-theme-option="light" aria-pressed="false" data-i18n="themeLight">Light</button>
-          <button class="toggle" type="button" data-theme-option="dark" aria-pressed="true" data-i18n="themeDark">Dark</button>
-        </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Habit Tracker</title>
 
-        <div class="toolbar-group" role="group" aria-labelledby="language-label">
-          <span id="language-label" class="toolbar-label" data-i18n="languageLabel">Language</span>
-          <button class="toggle" type="button" data-language-option="en" aria-pressed="true">EN</button>
-          <button class="toggle" type="button" data-language-option="es" aria-pressed="false">ES</button>
-        </div>
-      </div>
+    <!-- Applies the saved theme before the first paint so the page never
+         flashes the wrong colours. Keep in sync with the storage keys in app.js. -->
+    <script>
+      try {
+        var savedSettings = JSON.parse(
+          window.localStorage.getItem('habitTracker.settings') || '{}'
+        );
+        document.documentElement.dataset.theme =
+          savedSettings.theme === 'light' ? 'light' : 'dark';
+      } catch (error) {
+        // A blocked or broken localStorage just means we keep the dark default.
+      }
+    </script>
 
-      <h1 class="app-title" data-i18n="documentTitle">Habit Tracker</h1>
-      <p class="app-subtitle" data-i18n="appSubtitle">Log what you completed and keep the streak alive.</p>
-    </header>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- No crossorigin: these are same-directory files opened over file://,
+         and asking for a CORS request makes Chrome reject the preload. -->
+    <link rel="preload" href="fonts/inter-latin-var.woff2" as="font" type="font/woff2" />
+    <link rel="preload" href="fonts/lora-latin-var.woff2" as="font" type="font/woff2" />
+  </head>
 
-    <!-- Streak -->
-    <section class="card streak-card" aria-labelledby="streak-heading">
-      <h2 id="streak-heading" class="card-title" data-i18n="streaks">Streaks</h2>
+  <body>
+    <!-- ==========================================================
+         ICONS
+         The design uses simple stroke icons, so they are drawn here
+         as inline SVG and referenced with <use>. That keeps the app
+         offline: no icon font, no CDN, no image downloads.
+         ========================================================== -->
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19" />
+      </symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24">
+        <path d="M6 20V11M12 20V5M18 20v-6" />
+      </symbol>
+      <symbol id="i-user" viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+      </symbol>
+      <symbol id="i-flower" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="2.2" />
+        <circle cx="12" cy="6.4" r="2.6" />
+        <circle cx="17.6" cy="12" r="2.6" />
+        <circle cx="12" cy="17.6" r="2.6" />
+        <circle cx="6.4" cy="12" r="2.6" />
+      </symbol>
+      <symbol id="i-droplets" viewBox="0 0 24 24">
+        <path d="M12 3.5c3 4 5 6.4 5 9a5 5 0 0 1-10 0c0-2.6 2-5 5-9z" />
+      </symbol>
+      <symbol id="i-footprints" viewBox="0 0 24 24">
+        <ellipse cx="8.5" cy="8.5" rx="2.3" ry="3.3" />
+        <ellipse cx="15.5" cy="15.5" rx="2.3" ry="3.3" />
+      </symbol>
+      <symbol id="i-book" viewBox="0 0 24 24">
+        <path d="M12 7.5v12.5" />
+        <path d="M3.5 5.5h5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1 3.5-3.5h5v12h-5a3.5 3.5 0 0 0-3.5 3 3.5 3.5 0 0 0-3.5-3h-5z" />
+      </symbol>
+      <symbol id="i-notebook" viewBox="0 0 24 24">
+        <rect x="4" y="3.5" width="13" height="17" rx="2.5" />
+        <path d="M8 3.5v17" />
+        <path d="M21 7.5l-5.5 5.5-2.5.5.5-2.5 5.5-5.5z" />
+      </symbol>
+      <symbol id="i-walk" viewBox="0 0 24 24">
+        <circle cx="13" cy="4.5" r="1.8" />
+        <path d="M13 7v5.5" />
+        <path d="M13 12.5l-3 7" />
+        <path d="M13 12.5l3.5 4" />
+        <path d="M9.5 10.5h7" />
+      </symbol>
+      <symbol id="i-sprout" viewBox="0 0 24 24">
+        <path d="M12 20.5v-7.5" />
+        <path d="M12 13c0-3 2-5 5-5 0 3-2 5-5 5z" />
+        <path d="M12 15c0-2.4-1.6-4-4-4 0 2.4 1.6 4 4 4z" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="M5.5 12.5l4.2 4.2L18.5 7.5" />
+      </symbol>
+      <symbol id="i-check-check" viewBox="0 0 24 24">
+        <path d="M2.5 12.5l3.5 3.5 7-8" />
+        <path d="M11.5 15.5l1.8 1.5 8-9" />
+      </symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24">
+        <path d="M12 5.5v13M5.5 12h13" />
+      </symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24">
+        <path d="M5.5 12h13" />
+      </symbol>
+      <symbol id="i-flame" viewBox="0 0 24 24">
+        <path d="M12 3c3.2 3.6 5 6.2 5 9.2a5 5 0 0 1-10 0c0-1.7.7-3.2 2-4.7.3 1.3 1 2.1 2 2.1.9-2 .9-4.1 1-6.6z" />
+      </symbol>
+      <symbol id="i-trend" viewBox="0 0 24 24">
+        <path d="M3 16.5l6-6 4 4 7.5-7.5" />
+        <path d="M15.5 7h5v5" />
+      </symbol>
+      <symbol id="i-repeat" viewBox="0 0 24 24">
+        <path d="M4 9h11a5 5 0 0 1 5 5" />
+        <path d="M7.5 5.5L4 9l3.5 3.5" />
+        <path d="M20 15H9a5 5 0 0 1-5-5" />
+        <path d="M16.5 18.5L20 15l-3.5-3.5" />
+      </symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24">
+        <path d="M6 9.5a6 6 0 0 1 12 0c0 3.8 1.5 5 1.5 5h-15s1.5-1.2 1.5-5z" />
+        <path d="M10 18.5a2 2 0 0 0 4 0" />
+      </symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.5v5l3.2 1.8" />
+      </symbol>
+      <symbol id="i-chevron-right" viewBox="0 0 24 24">
+        <path d="M9.5 6l6 6-6 6" />
+      </symbol>
+      <symbol id="i-chevron-down" viewBox="0 0 24 24">
+        <path d="M6 9.5l6 6 6-6" />
+      </symbol>
+      <symbol id="i-arrow-left" viewBox="0 0 24 24">
+        <path d="M19 12H5" />
+        <path d="M11 5.5L4.5 12l6.5 6.5" />
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 24 24">
+        <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+      </symbol>
+      <symbol id="i-ellipsis" viewBox="0 0 24 24">
+        <path d="M5 12h.01M12 12h.01M19 12h.01" />
+      </symbol>
+    </svg>
 
-      <div class="streak-row">
-        <div class="streak-block">
-          <p class="streak-label" data-i18n="currentStreak">Current streak</p>
-          <p class="streak">
-            <span class="streak-emoji" aria-hidden="true">🔥</span>
-            <span id="streak-count" class="streak-count" aria-live="polite">0</span>
-          </p>
-        </div>
+    <div class="app" id="app">
+      <!-- ================= TODAY ================= -->
+      <section class="view" data-view="today">
+        <div class="screen">
+          <header class="greeting">
+            <div class="greeting-copy">
+              <p class="eyebrow" id="today-eyebrow"></p>
+              <h1 class="display" data-i18n="todayTitle"></h1>
+            </div>
+            <p class="avatar" id="avatar" aria-hidden="true"></p>
+          </header>
 
-        <div class="streak-block">
-          <p class="streak-label" data-i18n="bestStreak">Best streak</p>
-          <p class="streak">
-            <span class="streak-emoji" aria-hidden="true">🏆</span>
-            <span id="best-streak-count" class="streak-count streak-count-best" aria-live="polite">0</span>
-          </p>
-        </div>
-      </div>
+          <div class="week-strip" id="today-week"></div>
 
-      <p id="streak-message" class="streak-message"></p>
-    </section>
-
-    <!-- Weekly time -->
-    <section class="card" aria-labelledby="weekly-heading">
-      <h2 id="weekly-heading" class="card-title" data-i18n="thisWeek">This Week</h2>
-      <p id="weekly-range" class="weekly-range"></p>
-
-      <ul id="weekly-list" class="weekly-list"></ul>
-
-      <p id="weekly-empty" class="empty-state" data-i18n="noTimeThisWeek">No time logged yet this week.</p>
-    </section>
-
-    <!-- Monthly days -->
-    <section class="card" aria-labelledby="month-heading">
-      <h2 id="month-heading" class="card-title" data-i18n="thisMonth">This Month</h2>
-      <p id="month-label" class="month-label"></p>
-
-      <ul id="month-list" class="month-list"></ul>
-
-      <p id="month-empty" class="empty-state" data-i18n="noDaysThisMonth">No days logged yet this month.</p>
-    </section>
-
-    <!-- Form -->
-    <section class="card" aria-labelledby="form-heading">
-      <h2 id="form-heading" class="card-title" data-i18n="logAHabit">Log a Habit</h2>
-
-      <form id="habit-form" class="form">
-        <div class="form-row">
-          <div class="field">
-            <label class="label" for="date-input" data-i18n="date">Date</label>
-            <input class="input" type="date" id="date-input" name="date" required />
+          <div class="progress-card" id="today-progress">
+            <div class="ring">
+              <svg viewBox="0 0 72 72" aria-hidden="true">
+                <circle class="ring-track" cx="36" cy="36" r="30" />
+                <circle class="ring-fill" cx="36" cy="36" r="30" id="today-ring-fill" />
+              </svg>
+              <span class="ring-value" id="today-ring-value"></span>
+            </div>
+            <div class="progress-copy">
+              <p class="progress-title" id="today-progress-title"></p>
+              <p class="progress-count" id="today-progress-count"></p>
+              <p class="progress-note" data-i18n="todayProgressNote"></p>
+            </div>
           </div>
 
-          <div class="field">
-            <label class="label" for="habit-input">
-              <span data-i18n="habit">Habit</span>
-              <span class="required" data-i18n="required">(required)</span>
-            </label>
-            <input
-              class="input"
-              type="text"
-              id="habit-input"
-              name="habit"
-              placeholder="Read 20 mins, Workout, Drink 2L water"
-              data-i18n-placeholder="habitPlaceholder"
-              autocomplete="off"
-              required
-            />
+          <div class="habit-section">
+            <div class="section-head">
+              <h2 class="section-title" data-i18n="yourHabits"></h2>
+              <button class="text-action" id="new-habit-button" type="button">
+                <svg class="icon icon-15"><use href="#i-plus" /></svg>
+                <span data-i18n="newHabit"></span>
+              </button>
+            </div>
+            <ul class="habit-list" id="today-habits"></ul>
+            <p class="empty-note" id="today-empty" hidden></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= INSIGHTS ================= -->
+      <section class="view" data-view="insights">
+        <div class="screen">
+          <header class="page-intro">
+            <p class="eyebrow" data-i18n="insightsEyebrow"></p>
+            <h1 class="display" data-i18n="insightsTitle"></h1>
+            <p class="lede" data-i18n="insightsLede"></p>
+          </header>
+
+          <div class="range-switch" role="group" id="range-switch">
+            <button class="range-option" type="button" data-range="week" data-i18n="rangeWeek"></button>
+            <button class="range-option" type="button" data-range="month" data-i18n="rangeMonth"></button>
+            <button class="range-option" type="button" data-range="year" data-i18n="rangeYear"></button>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-summary">
+              <div class="chart-metric">
+                <p class="metric-label" id="chart-range"></p>
+                <p class="chart-percent" id="chart-percent"></p>
+                <p class="metric-label" id="chart-caption"></p>
+              </div>
+              <div class="change-pill" id="chart-change" hidden>
+                <svg class="icon icon-13"><use href="#i-trend" /></svg>
+                <span id="chart-change-text"></span>
+              </div>
+            </div>
+            <div class="bars" id="chart-bars"></div>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric-tile">
+              <svg class="icon icon-17"><use href="#i-flame" /></svg>
+              <p class="metric-value" id="insight-longest"></p>
+              <p class="metric-label" data-i18n="longestStreak"></p>
+            </div>
+            <div class="metric-tile">
+              <svg class="icon icon-17"><use href="#i-check-check" /></svg>
+              <p class="metric-value" id="insight-perfect"></p>
+              <p class="metric-label" data-i18n="allHabitsComplete"></p>
+            </div>
+          </div>
+
+          <div class="breakdown">
+            <h2 class="section-title" data-i18n="weekWins"></h2>
+            <ul class="rhythm-list" id="insight-habits"></ul>
+            <p class="empty-note" id="insight-empty" hidden></p>
+          </div>
+
+          <div class="reflection">
+            <svg class="icon icon-18"><use href="#i-sprout" /></svg>
+            <p id="insight-reflection"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= YOU ================= -->
+      <section class="view" data-view="you">
+        <div class="screen">
+          <header class="page-intro">
+            <p class="eyebrow" data-i18n="youEyebrow"></p>
+            <h1 class="display" data-i18n="youTitle"></h1>
+            <p class="lede" data-i18n="youLede"></p>
+          </header>
+
+          <div class="settings-card">
+            <div class="setting-row">
+              <span class="setting-label" data-i18n="themeLabel"></span>
+              <div class="switch-group" role="group">
+                <button class="switch" type="button" data-theme-option="light" data-i18n="themeLight"></button>
+                <button class="switch" type="button" data-theme-option="dark" data-i18n="themeDark"></button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label" data-i18n="languageLabel"></span>
+              <div class="switch-group" role="group">
+                <button class="switch" type="button" data-language-option="en">EN</button>
+                <button class="switch" type="button" data-language-option="es">ES</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <h2 class="section-title" data-i18n="historyTitle"></h2>
+              <span class="count-pill" id="history-count"></span>
+            </div>
+            <ul class="log-list" id="log-list"></ul>
+            <p class="empty-note" id="empty-state" hidden data-i18n="noLogsYet"></p>
+          </div>
+
+          <p class="warning" id="storage-warning" hidden data-i18n="storageWarning"></p>
+        </div>
+      </section>
+
+      <!-- ================= HABIT DETAIL ================= -->
+      <section class="view" data-view="habit">
+        <div class="screen">
+          <header class="screen-head">
+            <button class="round-button" id="habit-back" type="button">
+              <svg class="icon icon-20"><use href="#i-arrow-left" /></svg>
+            </button>
+            <span class="screen-title" data-i18n="yourHabit"></span>
+            <button class="round-button" id="habit-delete" type="button">
+              <svg class="icon icon-20"><use href="#i-ellipsis" /></svg>
+            </button>
+          </header>
+
+          <div class="page-intro">
+            <p class="eyebrow" id="habit-eyebrow"></p>
+            <h1 class="display" id="habit-title"></h1>
+            <p class="lede" id="habit-lede"></p>
+          </div>
+
+          <div class="hero">
+            <div class="hero-art"></div>
+            <div class="hero-chip">
+              <svg class="icon icon-14"><use id="habit-hero-icon" href="#i-sun" /></svg>
+              <span id="habit-hero-text"></span>
+            </div>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-card">
+              <div class="stat-value">
+                <span id="habit-streak"></span>
+                <svg class="icon icon-18"><use href="#i-flame" /></svg>
+              </div>
+              <p class="metric-label" data-i18n="dayStreak"></p>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">
+                <span id="habit-total"></span>
+                <svg class="icon icon-18"><use href="#i-check-check" /></svg>
+              </div>
+              <p class="metric-label" data-i18n="timesCompleted"></p>
+            </div>
+          </div>
+
+          <div class="rhythm-block">
+            <div class="section-head">
+              <h2 class="section-title" data-i18n="recentRhythm"></h2>
+              <span class="metric-label" id="habit-week-range"></span>
+            </div>
+            <div class="week-strip" id="habit-week"></div>
+          </div>
+
+          <ul class="schedule">
+            <li class="schedule-row">
+              <svg class="icon icon-17"><use href="#i-repeat" /></svg>
+              <span class="schedule-label" data-i18n="dailyGoal"></span>
+              <span class="schedule-value" id="habit-goal"></span>
+            </li>
+            <li class="schedule-row">
+              <svg class="icon icon-17"><use href="#i-bell" /></svg>
+              <span class="schedule-label" data-i18n="reminder"></span>
+              <span class="schedule-value" id="habit-reminder"></span>
+            </li>
+          </ul>
+
+          <div class="footer-action">
+            <button class="primary" id="habit-complete" type="button">
+              <svg class="icon icon-20"><use href="#i-check" /></svg>
+              <span id="habit-complete-text"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= NEW HABIT ================= -->
+      <section class="view" data-view="new">
+        <div class="screen">
+          <header class="screen-head">
+            <button class="round-button" id="new-back" type="button">
+              <svg class="icon icon-20"><use href="#i-arrow-left" /></svg>
+            </button>
+            <span class="screen-title" data-i18n="newHabitTitle"></span>
+            <button class="round-button" id="new-close" type="button">
+              <svg class="icon icon-20"><use href="#i-x" /></svg>
+            </button>
+          </header>
+
+          <div class="page-intro">
+            <h1 class="display" data-i18n="newHabitHeading"></h1>
+            <p class="lede" data-i18n="newHabitLede"></p>
+          </div>
+
+          <form id="habit-form" novalidate>
+            <div class="field-group">
+              <h2 class="field-title" data-i18n="whatToDo"></h2>
+              <label class="name-input" for="habit-input">
+                <span class="selected-icon">
+                  <svg class="icon icon-20"><use id="picked-icon" href="#i-walk" /></svg>
+                </span>
+                <input
+                  type="text"
+                  id="habit-input"
+                  autocomplete="off"
+                  data-i18n-placeholder="habitNamePlaceholder"
+                />
+              </label>
+              <div class="icon-picker" id="icon-picker"></div>
+            </div>
+
+            <div class="field-group">
+              <h2 class="field-title" data-i18n="howOften"></h2>
+              <div class="frequency" role="group">
+                <button class="freq-option" type="button" data-frequency="daily" data-i18n="everyDay"></button>
+                <button class="freq-option" type="button" data-frequency="specific" data-i18n="specificDays"></button>
+              </div>
+              <div class="weekday-picker" id="weekday-picker"></div>
+            </div>
+
+            <div class="field-group">
+              <h2 class="field-title" data-i18n="setGoal"></h2>
+              <div class="stepper">
+                <button class="step" type="button" id="goal-minus">
+                  <svg class="icon icon-18"><use href="#i-minus" /></svg>
+                </button>
+                <span class="step-value" id="goal-value"></span>
+                <button class="step" type="button" id="goal-plus">
+                  <svg class="icon icon-18"><use href="#i-plus" /></svg>
+                </button>
+                <span class="unit" id="goal-unit" data-i18n="minutesUnit"></span>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="section-head">
+                <h2 class="field-title" data-i18n="littleReminder"></h2>
+                <button class="toggle-switch" type="button" id="reminder-toggle" aria-pressed="false">
+                  <span class="thumb"></span>
+                </button>
+              </div>
+              <label class="time-input" for="reminder-input">
+                <svg class="icon icon-20"><use href="#i-clock" /></svg>
+                <input type="time" id="reminder-input" value="21:00" />
+                <span class="helper" data-i18n="yourLocalTime"></span>
+              </label>
+            </div>
+
+            <div class="preview">
+              <svg class="icon icon-18"><use href="#i-sprout" /></svg>
+              <p id="preview-text"></p>
+            </div>
+
+            <p class="warning" id="form-error" hidden></p>
+
+            <div class="footer-action">
+              <button class="primary" type="submit">
+                <svg class="icon icon-20"><use href="#i-plus" /></svg>
+                <span data-i18n="createHabit"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= TAB BAR ================= -->
+      <nav class="tabbar" id="tabbar">
+        <button class="tab" type="button" data-tab="today">
+          <svg class="icon icon-20"><use href="#i-sun" /></svg>
+          <span data-i18n="tabToday"></span>
+        </button>
+        <button class="tab" type="button" data-tab="insights">
+          <svg class="icon icon-20"><use href="#i-chart" /></svg>
+          <span data-i18n="tabInsights"></span>
+        </button>
+        <button class="tab" type="button" data-tab="you">
+          <svg class="icon icon-20"><use href="#i-user" /></svg>
+          <span data-i18n="tabYou"></span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ================= CELEBRATION ================= -->
+    <div class="overlay" id="celebration" hidden>
+      <div class="overlay-screen">
+        <header class="celebration-head">
+          <p class="eyebrow" id="celebration-date"></p>
+          <button class="round-button" id="celebration-close" type="button">
+            <svg class="icon icon-18"><use href="#i-x" /></svg>
+          </button>
+        </header>
+
+        <div class="botanical">
+          <div class="halo"></div>
+          <svg class="branch" viewBox="0 0 240 240" aria-hidden="true">
+            <path d="M120 232V70" />
+            <path d="M120 150c-26-4-38-22-40-46 24 2 38 20 40 46z" />
+            <path d="M120 176c26-4 38-22 40-46-24 2-38 20-40 46z" />
+            <path d="M120 116c-18-3-27-16-28-33 17 2 27 14 28 33z" />
+            <path d="M120 96c18-3 27-16 28-33-17 2-27 14-28 33z" />
+          </svg>
+          <div class="seal">
+            <svg class="icon icon-21"><use href="#i-check" /></svg>
           </div>
         </div>
 
-        <div class="field">
-          <label class="label" for="note-input">
-            <span data-i18n="categoryOrNote">Category / note</span>
-            <span class="optional" data-i18n="optional">(optional)</span>
-          </label>
-          <input
-            class="input"
-            type="text"
-            id="note-input"
-            name="note"
-            placeholder="Health, Chapter 4, No sugar"
-            data-i18n-placeholder="notePlaceholder"
-            autocomplete="off"
-          />
+        <div class="celebration-message">
+          <p class="eyebrow sage" data-i18n="celebrationEyebrow"></p>
+          <h1 class="display-xl" data-i18n="celebrationTitle"></h1>
+          <p class="lede center" id="celebration-lede"></p>
         </div>
 
-        <div class="field">
-          <label class="label" for="minutes-input">
-            <span data-i18n="timeSpent">Time spent</span>
-            <span class="optional" data-i18n="optional">(optional)</span>
-          </label>
-          <input
-            class="input"
-            type="number"
-            id="minutes-input"
-            name="minutes"
-            placeholder="Minutes, e.g. 25"
-            data-i18n-placeholder="minutesPlaceholder"
-            min="0"
-            step="1"
-            inputmode="numeric"
-            autocomplete="off"
-          />
+        <div class="card daily-achievement">
+          <div class="section-head">
+            <h2 class="section-title" data-i18n="todayGentle"></h2>
+            <span class="ratio" id="celebration-ratio"></span>
+          </div>
+          <div class="completed-habits" id="celebration-habits"></div>
         </div>
 
-        <button class="button" type="submit" data-i18n="addHabit">Add habit</button>
-      </form>
-    </section>
+        <div class="milestone" id="celebration-milestone" hidden>
+          <svg class="icon icon-22"><use href="#i-footprints" /></svg>
+          <div>
+            <p class="milestone-title" id="milestone-title"></p>
+            <p class="milestone-note" id="milestone-note"></p>
+          </div>
+        </div>
 
-    <!-- History -->
-    <section class="card" aria-labelledby="history-heading">
-      <div class="history-header">
-        <h2 id="history-heading" class="card-title" data-i18n="completedLogs">Completed Logs</h2>
-        <span id="log-count" class="badge">0 logs</span>
+        <div class="footer-action">
+          <button class="primary" id="celebration-done" type="button" data-i18n="backToToday"></button>
+        </div>
       </div>
+    </div>
 
-      <ul id="log-list" class="log-list"></ul>
-
-      <p id="empty-state" class="empty-state" data-i18n="noLogsYet">
-        Nothing logged yet. Your completed habits will appear here.
-      </p>
-
-      <p id="storage-warning" class="warning" hidden data-i18n="storageWarning">
-        Storage is not available in this browser, so logs will disappear when you close the page.
-      </p>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>

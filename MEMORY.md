@@ -2,46 +2,37 @@
 Project memory across sessions. Maximum ~50 lines: summarize or prune anything that no longer adds value.
 
 ## Current State
-- v7 functional: log habits (date, habit name, optional note, optional minutes), streak 🔥, best streak 🏆, a This Week card (minutes per habit), a This Month card (days per habit), a completed logs list, plus dark/light and English/Spanish toggles.
-- Visual identity is the warm editorial theme sampled from the Figma file "Habit Tracker": warm paper ground, sage greens, one sand accent, Lora display + Inter UI, flat with no shadows.
-- No build step and no network requests; the two fonts are bundled in `fonts/`. Storage: `habitTracker.logs` (habits) and `habitTracker.settings` (theme + language).
+- v8 is the full rebuild to the five Figma screens (Today, Habit detail, Progress, New habit, Celebration). Everything on disk, uncommitted; `e0fb4fa` is still HEAD.
+- Three screens/tabs: **Today** (progress ring, week strip, habit cards), **Progress** (Week/Month/Year chart, two metrics, per-habit breakdown, anchor note), **You** (theme + language, completed-logs History). Habit detail and New habit are full-screen views, not tabs.
+- Habits are real records now: create, edit fields, and delete. Completion is a log with an optional `habitId`.
+- Storage: `habitTracker.logs` (completions, key unchanged), `habitTracker.habits` (NEW, user-approved), `habitTracker.settings` (theme + language). No build step, no network; fonts bundled in `fonts/`.
 
 ## Decisions (and Rationale)
-- No backend or dependencies: anyone should be able to run it with a double click via `file://`.
-- Editable date in form, so past days can be backfilled; `max` is today, so future days cannot be logged.
-- Single global streak (not per habit): keeps the logic straightforward while the MVP grows.
-- The storage key stayed `habitTracker.logs` and `AGENTS.md` was corrected instead: the doc was wrong, not the code, so no user data had to be touched.
-- `minutes`, `id` and `createdAt` are all optional on a log. `minutes` is omitted when blank and old logs are never rewritten, so no migration is ever needed. `id`/`createdAt` exist for newest-first ordering of same-day entries.
-- Best streak is computed by sorting unique active days and walking the runs, so a streak in progress counts immediately and the record can never shrink.
-- 🔥 current / 🏆 best read apart at a glance. Time renders as a muted `· 25 min`; `min` is an abbreviation, so there is no plural to get wrong.
-- Week = Monday to today; totals group by exact habit text, most time first, A-Z on ties, with a range line that makes the boundary explicit.
-- Month = 1st to today; day counts keep a `Set` of day strings per habit, so daylight saving cannot affect them. A day counts even without `minutes`: days measure how often, minutes how long.
-- Both summaries are computed at render time and never stored, and both cards share the same CSS via selector lists.
-- Dark is the default (no `prefers-color-scheme`); the choice sticks. Theming is token-only, so new components need no theme work. `color-scheme` is set per theme or the native date picker stays light.
-- All copy sits in `TRANSLATIONS`; English is canonical and the fallback, Spanish mirrors it key for key, and dates follow the chosen language. Spanish wording: "racha" (not serie), "Agregar" (not Añadir), title "Rastreador de Hábitos".
-- Reskinned to the Figma mockups: sampled the real fills, strokes, radii and font sizes from the file rather than inventing a palette. The earlier cyberpunk neon look was replaced outright, not blended.
-- The design is flat on purpose: zero shadows, zero glows. Depth comes from the sage tints and spacing alone.
-- Lora + Inter are bundled as latin-subset variable woff2 (86 KB total) so the app still works offline; `fonts/` is the one sanctioned third-party asset here.
-- Two mockup colours missed WCAG AA and were darkened within the same hue family: `#7a8176` to `#61685e`, `#865d40` to `#7d5537`. Contrast outranks pixel-fidelity.
-- Display serif (Lora) is used for the title and the big streak numerals; everything else is Inter in sentence case. No uppercase tracking anywhere.
-- The visible Theme / Language labels are clip-hidden but kept for screen readers; the buttons read as Light | Dark and EN | ES.
+- The user asked for the full five-screen rebuild and said "What I have in Figma is the target", which superseded the earlier reskin-only scope and authorised the schema addition.
+- Habits live in their OWN key so adding a habit can never touch logs. `habitId` on a log is optional: a legacy log (name only) is matched to a habit by name, so old data keeps working and is never rewritten. Legacy logs count for streaks + History but are excluded from the Insights ratios.
+- Per-habit streak reuses the global rules over that habit's own days. Yesterday-only activity keeps a streak alive (today may simply not be done yet).
+- Insights counts **distinct habits per block**, not raw entries, so all three ranges share one unit and the percentage is always habits ÷ (habits × blocks that have STARTED). Week = 7 day bars, Month = one bar per week of the month, Year = one per month. A week/month/year still in progress is compared against the same number of past blocks.
+- The breakdown rows and the anchor sentence are built from the SAME rows, so the ratio on screen and the sentence under it can never disagree.
+- The change pill is hidden when the previous block had no completions — "+80% vs last week" over a zero baseline is noise.
+- Habits not due today stay visible but muted ("Rest day today") and cannot be completed from either the card or the detail screen; they are also excluded from the Today denominator.
+- The celebration shows the first time all due habits are done in a visit, never on page load (don't nag). It gets one focusable Close button; Escape also closes it.
+- Two mockup colours missed WCAG AA and were darkened within the same hue family: `#7a8176` → `#61685e`, `#865d40` → `#7d5537`. Contrast outranks pixel-fidelity.
+- Icons are an inline SVG sprite (`<symbol>` + `<use>`); dynamic icons use `createElementNS`, never `innerHTML`.
+- Overlines ARE tracked uppercase (Inter 11px SemiBold, 1.5px). This corrects the old "no uppercase tracking anywhere" note.
 
 ## Lessons Learned & Pitfalls to Avoid
-- Never compare two days with `(later - earlier) / 86400000`: on DST days a day is 23 or 25 hours long. Step a local `Date` with `setDate(+1)` and compare date strings instead.
-- Month boundaries come from `new Date(year, month, 1)`, never from subtracting days: on the 5th, `shift(-5)` lands in the previous month. Likewise yesterday is not always in the current week.
-- Filter out future-dated entries when scanning history, or they create fake streaks. Week totals skip entries without `minutes` rather than counting zero; day counts skip nothing.
-- `[data-theme='dark']` and `:root` have equal specificity, so the dark block must come after `:root`. Docs can drift from code: check the real key in `app.js` before trusting `AGENTS.md`.
-- Setting `textContent` on a label deletes nested `<span>`s, so `(required)` / `(optional)` each need their own `data-i18n`.
-- Anything added to the UI needs a key in BOTH languages or the user sees `undefined`. The `habitRequired` validation message is easiest to forget.
-- `localeCompare` breaks ties case-insensitively (`workout` before `Workout`) — intended. Habit names are free text, so name variants split into separate rows until a picker exists.
-- Never wrap a `box-shadow` token inside `drop-shadow()`; the lists are incompatible so the filter is silently dropped.
-- A `<link rel="preload" as="font" crossorigin>` is rejected by Chrome on `file://` (CORS is unsupported for that scheme) and floods the console. Local font preloads must omit `crossorigin`.
-- Confirm a downloaded asset really is what it claims by checking `file` output or its magic bytes, not just the HTTP status.
-- A `white-space: nowrap` label keeps side-by-side numerals aligned at 320px.
-- Testing layout on macOS: headless Chrome clamps `--window-size` to 500px, so a "390px" shot is a 500px layout cropped. Use a fixed-width `<iframe>`. All `file://` pages share one localStorage bucket, so test one variant at a time.
+- Reload with `ignoreCache: true` after editing `app.js`: a plain reload reuses the cached `file://` script and you will "verify" the previous build.
+- Never compare days with `(later - earlier) / 86400000` (DST days are 23/25h). Step a local `Date` with `setDate(+1)` and compare date strings. Month boundaries come from `new Date(y, m, 1)`.
+- A click listener on a card AND on a control inside it means the control's tap also opens the card. Make the tappable area a real `<button>` sibling of the control instead — that fixes the bubbling bug and keyboard access at once.
+- Give every colour a token: `[data-theme='dark']` and `:root` tie on specificity, so the dark block must come after `:root`.
+- `textContent` on a label deletes nested spans; anything new in the UI needs a key in BOTH languages or the user sees `undefined`.
+- Endless weekday lists ("Mon, Tue, Wed, Thu, Fri") overflow: collapse a run to "Mon–Fri" and anything else to "N days a week".
+- 7 weekday circles at a fixed 40px overflow below ~370px. `flex: 1 1 0; max-width: 40px` shrinks them at 320px and keeps 40px on wider screens.
+- Hidden flex containers still need `[hidden] { display: none !important }`.
+- `file://` quirks: all pages share one localStorage bucket; `<link rel=preload as=font crossorigin>` is rejected; an `<iframe>` is cross-origin for inspection (but can be screenshotted).
+- Headless Chrome clamps the window to 500px. To test 320px, cap `.app`/`.overlay-screen` to `max-width: 320px` and compare each element's right edge to the column's own right edge.
 
 ## Next Steps
-- Delete / edit existing log entries.
-- Per-habit streaks and best streaks.
-- A habit picker to stop one habit being split across name variants.
-- Five cards is a tall page; consider one Week/Month switch if it bothers you on mobile.
+- Delete / edit individual log entries (only habits can be deleted today).
+- A celebration/heat-map history for a habit's own detail view.
+- Commit and push once the user has reviewed the rebuild.

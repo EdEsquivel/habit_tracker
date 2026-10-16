@@ -1,5 +1,11 @@
-/* Habit Tracker — warm editorial theme, derived from the Figma "Habit Tracker" file.
-   Mobile first, no frameworks. Two bundled families, flat surfaces, no shadows. */
+/* Habit Tracker — warm editorial theme, built from the Figma "Habit Tracker" file.
+   Mobile first, no frameworks. Two bundled families, flat surfaces, no shadows.
+
+   Every colour is a custom property so the dark theme only has to redefine
+   them once, and no component rule knows which theme is active.
+   Type sizes, radii, padding and gaps are taken from the mockup's auto-layout,
+   which uses 14/16/20 card padding, a 9px grid gap, and radii of 22 (cards),
+   16 (habit symbols), 14 (controls) and 100 (pills). */
 
 /* ============================================================
    FONTS — bundled so the app keeps working offline from file://
@@ -23,9 +29,10 @@
 
 /* ============================================================
    TOKENS
-   Colours are sampled from the mockups: a warm paper ground, sage
-   greens, and one sand/brown accent for emphasis. Dark is the same
-   family inverted so the existing theme toggle keeps working.
+   Light is sampled straight from the mockup. Dark is the same
+   family inverted, because the mockup is light-only. Two source
+   colours failed WCAG AA and were darkened within their hue
+   family: #7a8176 -> #61685e and #865d40 -> #7d5537.
    ============================================================ */
 
 :root {
@@ -34,30 +41,27 @@
   --page: #f8f6f0;
   --surface: #fffefa;
   --sunk: #e8ede2;
+  --sunk-deep: #dde4d5;
   --border: #e4e5da;
-  --border-strong: #b8c8ad;
 
   --ink: #283c32;
-  /* Nudged darker than the mockup's #7a8176, which only reached 3.7:1 on the
-     paper ground. Same hue family, now clears 4.5:1 on every light surface. */
   --ink-dim: #61685e;
 
   --accent: #4f6b57;
-  --accent-deep: #283c32;
-  --accent-soft: #b8c8ad;
-  --on-accent: #fffefa;
+  --accent-solid: #4f6b57;
+  --on-accent-solid: #fffefa;
+  --sage-soft: #b8c8ad;
 
   --sand: #f2d6be;
-  /* Also nudged from the mockup's #865d40 for contrast on the sand fill. */
   --sand-ink: #7d5537;
 
   --focus: #4f6b57;
-  --wash: rgba(79, 107, 87, 0.07);
 
   --radius-card: 22px;
   --radius-control: 14px;
-  --radius-pill: 999px;
-  --radius-small: 8px;
+  --radius-symbol: 16px;
+  --radius-small: 12px;
+  --radius-pill: 100px;
 
   --font-display: 'Lora', Georgia, 'Times New Roman', serif;
   --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -69,22 +73,21 @@
   --page: #151d18;
   --surface: #1c2620;
   --sunk: #243029;
+  --sunk-deep: #2c3a31;
   --border: #33423a;
-  --border-strong: #4a5f52;
 
   --ink: #eef2ec;
   --ink-dim: #9aa89e;
 
   --accent: #9dc3ac;
-  --accent-deep: #d7e7db;
-  --accent-soft: #4a5f52;
-  --on-accent: #16201a;
+  --accent-solid: #cfe3d4;
+  --on-accent-solid: #16201a;
+  --sage-soft: #5f7d69;
 
   --sand: #3b2c1f;
   --sand-ink: #e8c9a8;
 
   --focus: #9dc3ac;
-  --wash: rgba(157, 195, 172, 0.06);
 }
 
 /* ============================================================
@@ -97,378 +100,815 @@
 
 body {
   margin: 0;
-  padding: 28px 16px 64px;
-  min-height: 100vh;
   background: var(--page);
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-/* One soft wash behind the page, echoing the mockups' pale green blob. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(90% 50% at 50% 0%, var(--wash), transparent 70%);
+body.has-overlay {
+  overflow: hidden;
 }
 
 ::selection {
-  background: var(--accent-soft);
+  background: var(--sage-soft);
   color: var(--ink);
 }
 
-.container {
-  position: relative;
-  z-index: 1;
-  max-width: 680px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* ============================================================
-   HEADER
-   ============================================================ */
-
-.app-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 4px 4px 8px;
-}
-
-.app-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 8vw, 2.6rem);
-  font-weight: 400;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
-.app-subtitle {
-  margin: 0;
-  max-width: 46ch;
-  font-size: 0.95rem;
-  color: var(--ink-dim);
-}
-
-/* ============================================================
-   TOOLBAR — pill segmented controls
-   ============================================================ */
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-}
-
-.toolbar-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px;
-  background: var(--sunk);
-  border-radius: var(--radius-pill);
-}
-
-/* Kept in the DOM for screen readers and i18n; the buttons speak for themselves. */
-.toolbar-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Padding is sized so each toggle is ~40px tall: past the 24px WCAG 2.5.8
-   floor and comfortable under a thumb, without reading chunky. */
-.toggle {
-  padding: 11px 18px;
-  font-family: var(--font-ui);
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--ink-dim);
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease;
-}
-
-.toggle:hover {
-  color: var(--ink);
-}
-
-.toggle[aria-pressed='true'] {
-  color: var(--on-accent);
-  background: var(--accent-deep);
-}
-
-.toggle:focus-visible {
+:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-/* ============================================================
-   CARDS
-   ============================================================ */
-
-.card {
-  padding: 22px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+/* Several hidden things are flex containers, and `display:flex` would win
+   over the bare [hidden] attribute, so this has to be explicit. */
+[hidden] {
+  display: none !important;
 }
 
-.card-title {
-  margin: 0 0 16px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink-dim);
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 }
 
-.history-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+/* The icon sprite is referenced by <use>, so it must stay in the document
+   but out of the layout. display:none would break the reference. */
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
-.history-header .card-title {
-  margin-bottom: 0;
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.badge {
-  font-size: 0.78rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--accent);
-  background: var(--sunk);
-  border-radius: var(--radius-pill);
-  padding: 3px 12px;
-  white-space: nowrap;
+.icon-11 { width: 11px; height: 11px; }
+.icon-13 { width: 13px; height: 13px; }
+.icon-14 { width: 14px; height: 14px; }
+.icon-15 { width: 15px; height: 15px; }
+.icon-16 { width: 16px; height: 16px; }
+.icon-17 { width: 17px; height: 17px; }
+.icon-18 { width: 18px; height: 18px; }
+.icon-19 { width: 19px; height: 19px; }
+.icon-21 { width: 21px; height: 21px; }
+.icon-22 { width: 22px; height: 22px; }
+
+.app {
+  max-width: 430px;
+  margin: 0 auto;
 }
 
-/* ============================================================
-   STREAK — the two stats sit in sunk tiles, as in the mockups
-   ============================================================ */
-
-.streak-card {
-  background: var(--surface);
-}
-
-.streak-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.streak-block {
-  flex: 1 1 160px;
+.screen {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 18px 20px;
-  background: var(--sunk);
-  border-radius: var(--radius-card);
+  gap: 24px;
+  padding: 20px 24px 104px;
 }
 
-.streak-label {
+/* On the pushed screens there is no tab bar, so the footer can sit closer. */
+.app[data-active-view='habit'] .screen,
+.app[data-active-view='new'] .screen {
+  padding-bottom: 16px;
+}
+
+/* ============================================================
+   TYPE ROLES
+   ============================================================ */
+
+.display {
   margin: 0;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--ink-dim);
-}
-
-.streak {
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.streak-emoji {
-  font-size: 1.5rem;
-  line-height: 1;
-}
-
-.streak-count {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 15vw, 3.9rem);
   font-weight: 400;
-  line-height: 1;
-  font-variant-numeric: lining-nums;
+  font-size: 36px;
+  line-height: 1.12;
+  letter-spacing: -0.028em;
   color: var(--ink);
 }
 
-/* The record is the one thing that gets the deep green. */
-.streak-count-best {
-  color: var(--accent);
+.display-xl {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.13;
+  letter-spacing: -0.026em;
+  color: var(--ink);
 }
 
-.streak-message {
-  margin: 14px 0 0;
-  padding: 14px 16px;
-  font-size: 0.9rem;
-  color: var(--sand-ink);
-  background: var(--sand);
-  border-radius: var(--radius-control);
-}
-
-/* ============================================================
-   WEEKLY / MONTHLY SUMMARIES
-   ============================================================ */
-
-.weekly-range,
-.month-label {
-  margin: -8px 0 14px;
-  font-size: 0.85rem;
+/* The overline labels: small, spaced capitals, exactly as drawn. */
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   color: var(--ink-dim);
 }
 
-.weekly-list,
-.month-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.weekly-item,
-.month-item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
-}
-
-.weekly-item:first-child,
-.month-item:first-child {
-  border-top: 0;
-}
-
-.weekly-habit,
-.month-habit {
-  min-width: 0;
-  font-size: 0.95rem;
-  overflow-wrap: anywhere;
-}
-
-.weekly-time,
-.month-days {
-  flex: none;
-  white-space: nowrap;
-  font-size: 0.95rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.eyebrow.sage {
   color: var(--accent);
 }
 
+.lede {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+
+.lede.center {
+  text-align: center;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.metric-label {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.metric-value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 23px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.field-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.helper {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.empty-note {
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: var(--radius-control);
+  background: var(--sunk);
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.warning {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: var(--sand);
+  color: var(--sand-ink);
+  font-size: 12px;
+}
+
 /* ============================================================
-   FORM
+   TODAY — greeting
    ============================================================ */
 
-.form {
+.greeting {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
 
-.field {
+.greeting-copy {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
 }
 
-.label {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--ink-dim);
-}
-
-.required,
-.optional {
-  font-weight: 400;
-  opacity: 0.75;
-}
-
-.input {
-  width: 100%;
-  padding: 12px 14px;
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
-  color: var(--ink);
-  caret-color: var(--accent);
-  background: var(--page);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  transition: border-color 140ms ease;
-}
-
-.input::placeholder {
-  color: var(--ink-dim);
-  opacity: 0.7;
-}
-
-.input:hover {
-  border-color: var(--border-strong);
-}
-
-.input:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
-  border-color: var(--focus);
-}
-
-.button {
-  padding: 13px 26px;
-  font-family: var(--font-ui);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--on-accent);
-  background: var(--accent-deep);
-  border: 0;
+.avatar {
+  margin: 0;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
   border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: opacity 140ms ease;
-}
-
-.button:hover {
-  opacity: 0.88;
-}
-
-.button:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
-}
-
-.button:active {
-  transform: translateY(1px);
+  background: var(--sand);
+  color: var(--sand-ink);
+  font-family: var(--font-display);
+  font-size: 19px;
 }
 
 /* ============================================================
-   COMPLETED LOGS
+   WEEK STRIP
    ============================================================ */
+
+.week-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  flex: 1 1 0;
+}
+
+.week-letter {
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.week-state {
+  width: 36px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.week-state .icon {
+  stroke-width: 1.9;
+}
+
+/* Activity variant (Today): only today gets a solid circle. Whether a day was
+   active is shown by the dot underneath, exactly as the mockup draws it. */
+.week-strip[data-variant='activity'] .week-state.is-today {
+  background: var(--accent-solid);
+  color: var(--on-accent-solid);
+  font-weight: 600;
+}
+
+/* Completion variant (habit screen): done days are tinted and ticked, and
+   today is an outlined circle holding its date. */
+.week-strip[data-variant='completion'] .week-state {
+  height: 36px;
+}
+
+.week-strip[data-variant='completion'] .week-state.is-done {
+  background: var(--sunk);
+  color: var(--accent);
+}
+
+.week-strip[data-variant='completion'] .week-state.is-today {
+  background: var(--page);
+  border: 1px solid var(--accent-solid);
+  color: var(--accent);
+}
+
+.week-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+
+.week-dot.is-active {
+  background: var(--accent-solid);
+}
+
+/* ============================================================
+   TODAY — progress card
+   ============================================================ */
+
+.progress-card {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  padding: 20px;
+  border-radius: var(--radius-card);
+  background: var(--sunk);
+}
+
+.ring {
+  position: relative;
+  flex: none;
+  width: 72px;
+  height: 72px;
+}
+
+.ring svg {
+  width: 72px;
+  height: 72px;
+  transform: rotate(-90deg);
+}
+
+.ring-track,
+.ring-fill {
+  fill: none;
+  stroke-width: 6;
+}
+
+.ring-track {
+  stroke: var(--sunk-deep);
+}
+
+.ring-fill {
+  stroke: var(--accent-solid);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 400ms ease;
+}
+
+.ring-value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.progress-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.progress-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 23px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.progress-count {
+  margin: 0;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.progress-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+/* ============================================================
+   HABIT LIST
+   ============================================================ */
+
+.habit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.text-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.habit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+/* The tappable left side: opens the habit without stealing the control's taps. */
+.habit-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.habit-symbol {
+  flex: none;
+  width: 42px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-symbol);
+  background: var(--sunk);
+  color: var(--accent);
+}
+
+.habit-card[data-accent='warm'] .habit-symbol {
+  background: var(--sand);
+  color: var(--sand-ink);
+}
+
+.habit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.habit-name {
+  display: block;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.habit-meta {
+  display: block;
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.habit-streak {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.habit-rest {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+
+.complete-control {
+  flex: none;
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--sunk-deep);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--on-accent-solid);
+}
+
+.complete-control[aria-pressed='true'] {
+  border-color: var(--accent-solid);
+  background: var(--accent-solid);
+}
+
+.complete-control:disabled {
+  border-color: var(--border);
+  background: transparent;
+  cursor: default;
+}
+
+/* ============================================================
+   PAGE INTRO (insights / you / pushed screens)
+   ============================================================ */
+
+.page-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.page-intro .display {
+  max-width: 320px;
+}
+
+/* ============================================================
+   INSIGHTS
+   ============================================================ */
+
+.range-switch {
+  display: flex;
+  gap: 0;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+}
+
+.range-option {
+  flex: 1;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: 12px;
+  color: var(--ink-dim);
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.range-option.is-selected {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.chart-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chart-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.chart-percent {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.change-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 30px;
+  padding: 7px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--bar-gap, 20px);
+}
+
+.daily-bar {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bar-count {
+  margin: 0;
+  text-align: center;
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.bar-track {
+  position: relative;
+  height: 82px;
+  border-radius: 7px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.bar-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 7px;
+  background: var(--sage-soft);
+  transition: height 300ms ease;
+}
+
+.bar-fill.is-today {
+  background: var(--accent-solid);
+}
+
+.bar-label {
+  margin: 0;
+  text-align: center;
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+
+.metric-row {
+  display: flex;
+  gap: 12px;
+}
+
+.metric-tile {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--radius-card);
+  background: var(--sunk);
+  color: var(--accent);
+}
+
+.metric-tile .metric-value {
+  color: var(--ink);
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rhythm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rhythm-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.rhythm-habit {
+  font-size: 12px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.rhythm-marks {
+  display: flex;
+  gap: 4px;
+}
+
+.day-mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.day-mark.is-done {
+  background: var(--sage-soft);
+}
+
+.rhythm-ratio {
+  font-size: 11px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.reflection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-control);
+  background: var(--sand);
+  color: var(--sand-ink);
+}
+
+.reflection p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   YOU — settings and history
+   ============================================================ */
+
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.setting-label {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.switch-group {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+}
+
+.switch {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: 12px;
+  color: var(--ink-dim);
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.switch[aria-pressed='true'] {
+  background: var(--accent-solid);
+  color: var(--on-accent-solid);
+  font-weight: 600;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.count-pill {
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+}
 
 .log-list {
   list-style: none;
-  margin: 4px 0 0;
+  margin: 0;
   padding: 0;
 }
 
@@ -478,32 +918,32 @@ body::before {
 }
 
 .log-item:first-child {
+  padding-top: 0;
   border-top: 0;
 }
 
 .log-habit {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 14px;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .log-time {
-  margin-left: 6px;
+  font-size: 0.85em;
   font-weight: 500;
-  font-size: 0.88em;
   color: var(--accent);
 }
 
 .log-note {
   margin: 4px 0 0;
+  font-size: 12px;
   color: var(--ink-dim);
-  font-size: 0.88rem;
 }
 
 .log-date {
   margin: 3px 0 0;
-  font-size: 0.78rem;
+  font-size: 11px;
   color: var(--ink-dim);
 }
 
@@ -513,75 +953,614 @@ body::before {
 }
 
 /* ============================================================
-   EMPTY STATE + WARNING
+   SCREEN HEADER (pushed screens)
    ============================================================ */
 
-.empty-state {
-  margin: 16px 0 0;
-  padding: 16px 18px;
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--ink-dim);
-  background: var(--sunk);
-  border-radius: var(--radius-control);
+.screen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
 }
 
-.warning {
-  margin: 16px 0 0;
-  padding: 12px 14px;
-  font-size: 0.85rem;
-  color: var(--sand-ink);
-  background: var(--sand);
-  border-radius: var(--radius-control);
+.screen-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.round-button {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
 }
 
 /* ============================================================
-   WIDER SCREENS
+   HABIT DETAIL
    ============================================================ */
 
-@media (min-width: 620px) {
-  body {
-    padding: 44px 24px 80px;
-  }
-
-  .app-header {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px 24px;
-  }
-
-  .app-title {
-    order: 1;
-  }
-
-  .toolbar {
-    order: 2;
-    width: auto;
-    flex-wrap: nowrap;
-  }
-
-  .app-subtitle {
-    order: 3;
-    flex-basis: 100%;
-  }
-
-  .card {
-    padding: 26px;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 190px 1fr;
-    gap: 16px;
-  }
-
-  .button {
-    align-self: flex-start;
-    min-width: 180px;
-  }
+.hero {
+  position: relative;
+  height: 147px;
+  border-radius: var(--radius-card);
+  background: var(--sunk);
+  overflow: hidden;
 }
+
+/* A flat stand-in for the mockup's photograph: one tinted circle on a tinted
+   ground, no gradient, so the surface stays flat like the rest of the design. */
+.hero-art {
+  position: absolute;
+  inset: 0;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.hero-art::after {
+  content: '';
+  position: absolute;
+  top: -46px;
+  right: -34px;
+  width: 154px;
+  height: 154px;
+  border-radius: var(--radius-pill);
+  background: var(--sage-soft);
+  opacity: 0.45;
+}
+
+.hero-chip {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stat-row {
+  display: flex;
+  gap: 12px;
+}
+
+.stat-card {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.stat-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
+
+.stat-value span {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.rhythm-block {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.schedule {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.schedule-row > .icon:first-child {
+  color: var(--ink-dim);
+}
+
+.schedule-label {
+  flex: 1;
+  color: var(--ink-dim);
+  overflow-wrap: anywhere;
+}
+
+.schedule-value {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   NEW HABIT
+   ============================================================ */
+
+#habit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.name-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.selected-icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-small);
+  background: var(--sand);
+  color: var(--sand-ink);
+}
+
+.name-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.name-input input:focus {
+  outline: none;
+}
+
+.name-input:focus-within {
+  border-color: var(--focus);
+  /* Drawn inside the border box so the ring does not double up with it. */
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.name-input input::placeholder {
+  color: var(--ink-dim);
+}
+
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.icon-option {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--ink-dim);
+}
+
+.icon-option.is-selected {
+  border-color: var(--accent-solid);
+  background: var(--sunk);
+  color: var(--accent);
+}
+
+.frequency {
+  display: flex;
+  gap: 8px;
+}
+
+.freq-option {
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.freq-option.is-selected {
+  border-color: var(--accent-solid);
+  background: var(--sunk);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.weekday-picker {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+/* Seven circles have to fit a 320px screen, so they shrink instead of
+   overflowing, and stop growing at the mockup's 40px on wider screens. */
+.weekday-option {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-dim);
+}
+
+.weekday-option.is-selected {
+  border-color: var(--accent-solid);
+  background: var(--accent-solid);
+  color: var(--on-accent-solid);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.step {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+}
+
+.step-value {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 27px;
+  color: var(--ink);
+}
+
+.unit {
+  margin-left: auto;
+  padding-left: 18px;
+  border-left: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--sunk-deep);
+  transition: background 140ms ease;
+}
+
+.toggle-switch .thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  transition: transform 140ms ease;
+}
+
+.toggle-switch.is-on {
+  background: var(--accent-solid);
+}
+
+.toggle-switch.is-on .thumb {
+  transform: translateX(16px);
+}
+
+.time-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.time-input .icon {
+  color: var(--accent);
+}
+
+.time-input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.time-input input:disabled {
+  color: var(--ink-dim);
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-control);
+  background: var(--sunk);
+  color: var(--accent);
+}
+
+.preview p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   FOOTER ACTION
+   ============================================================ */
+
+.footer-action {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 12px 0 0;
+  background: var(--page);
+}
+
+.primary {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--accent-solid);
+  color: var(--on-accent-solid);
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity 140ms ease;
+}
+
+.primary:hover {
+  opacity: 0.9;
+}
+
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ============================================================
+   TAB BAR
+   ============================================================ */
+
+.tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 42px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.app[data-active-view='habit'] .tabbar,
+.app[data-active-view='new'] .tabbar {
+  display: none;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 10px;
+  color: var(--ink-dim);
+}
+
+.tab.is-selected {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ============================================================
+   CELEBRATION
+   ============================================================ */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  background: var(--page);
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+.overlay-screen {
+  max-width: 430px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px 24px 32px;
+}
+
+.celebration-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+
+.botanical {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 254px;
+}
+
+.halo {
+  width: 232px;
+  height: 232px;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+}
+
+.branch {
+  position: absolute;
+  width: 236px;
+  height: 244px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.seal {
+  position: absolute;
+  right: 24%;
+  bottom: 14%;
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent-solid);
+  color: var(--on-accent-solid);
+}
+
+.celebration-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 13px;
+  text-align: center;
+}
+
+.daily-achievement {
+  gap: 19px;
+}
+
+.completed-habits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.completed-habit {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--sunk);
+  color: var(--accent);
+}
+
+.ratio {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  color: var(--accent);
+}
+
+.milestone {
+  display: flex;
+  gap: 12px;
+  padding: 15px;
+  border-radius: var(--radius-control);
+  background: var(--sand);
+  color: var(--sand-ink);
+}
+
+.milestone[hidden] {
+  display: none;
+}
+
+.milestone-title {
+  margin: 0 0 5px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.milestone-note {
+  margin: 0;
+  font-size: 11px;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   *,
